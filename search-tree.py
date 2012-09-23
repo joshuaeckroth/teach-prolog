@@ -23,8 +23,7 @@ g2 = [ \
         "4 [label=\":)\", shape=\"none\"]; 3 -> 5 [label=\"_G7 = marcellus\"];",
         "5 [label=\":)\", shape=\"none\"]; 2 -> 6 [label=\"_G5 = marcellus,\l_G6 = mia\"];",
         "6 [label=\"?- loves(_G7, mia)\", shape=\"box\"]; 6 -> 7 [label=\"_G7 = vincent\"];",
-        "7 [label=\":)\", shape=\"none\"]; 6 -> 8 [label=\"_G7 = mia\"];",
-        "8 [label=\":)\", shape=\"none\"];" ]
+        "7 [label=\":)\", shape=\"none\"];" ]
 
 create_graph("ex2", g2)
 
