@@ -15,21 +15,17 @@ nilp(nil).
 
 atomp(X) :- \+listp(X).
 
-cond([Pred, Clause|_], Env, NewEnv2, Result) :-
-    eval(Pred, Env, NewEnv, t),
-    eval(Clause, NewEnv, NewEnv2, Result).
+cond([Pred, Clause|_], Env, Result) :-
+    eval(Pred, Env, _, t),
+    eval(Clause, Env, _, Result).
 
-cond([_, _|Rest], Env, NewEnv, Result) :-
-    cond(Rest, Env, NewEnv, Result).
+cond([_, _|Rest], Env, Result) :-
+    cond(Rest, Env, Result).
 
 eval_each([], Env, Env, []).
 eval_each([First|Rest], Env, NewEnv2, [FirstResult|RestResult]) :-
-    %print('First: '), print(First), nl, print('Rest: '), print(Rest), nl,
     eval(First, Env, NewEnv, FirstResult),
-    %print('FirstResult: '), print(FirstResult), nl,
     eval_each(Rest, NewEnv, NewEnv2, RestResult).
-    %print('RestResult: '), print(RestResult), nl,
-    %print('FinalResult: '), print([FirstResult|RestResult]), nl.
 
 eval(t, Env, Env, t).
 eval(nil, Env, Env, nil).
@@ -48,63 +44,94 @@ eval(*, Env, Env, *).
 
 eval([lambda|Forms], Env, Env, [lambda|Forms]).
 
+eval([[lambda|Forms]|Args], Env, Env, Result) :-
+    apply([lambda|Forms], Args, Env, Result).
+
 eval([quote|[Forms]], Env, Env, Forms).
 
 eval([def,Sym|[Forms]], Env, NewEnv, [quote, Sym]) :-
     merge_env([Sym], [Forms], Env, NewEnv).
 
-eval([Fn|Forms], Env, NewEnv3, Result) :-
-    %print('Fn: '), print(Fn), nl, print('Forms: '), print(Forms), nl,
+eval([Fn|Forms], Env, NewEnv2, Result) :-
     eval(Fn, Env, NewEnv, FnEvaled),
-    %print('FnEvaled: '), print(FnEvaled), nl,
     eval_each(Forms, NewEnv, NewEnv2, FormsEvaled),
-    %print('FormsEvaled: '), print(FormsEvaled), nl,
-    apply(FnEvaled, FormsEvaled, NewEnv2, NewEnv3, Result).
+    apply(FnEvaled, FormsEvaled, NewEnv2, Result).
 
 eval(Number, Env, Env, Number) :- number(Number).
 eval(Atom, Env, Env, Result) :- atomp(Atom), lookup(Env, Atom, Result).
 
-apply(car, [Forms], Env, Env, Result) :-
+apply(car, [Forms], _, Result) :-
     car(Forms, Result).
 
-apply(cdr, [Forms], Env, Env, Result) :-
+apply(cdr, [Forms], _, Result) :-
     cdr(Forms, Result).
 
-apply(cons, Forms, Env, Env, Result) :-
+apply(cons, Forms, _, Result) :-
     cons(Forms, Result).
 
-apply(eq, [X, X], Env, Env, t) :- atomp(X).
-apply(eq, [[], []], Env, Env, t).
-apply(eq, _, Env, Env, nil).
+apply(eq, [X, X], _, t) :- atomp(X).
+apply(eq, [[], []], _, t).
+apply(eq, _, _, nil).
 
-apply(listp, [Forms], Env, Env, t) :- listp(Forms).
-apply(listp, _, Env, Env, nil).
+apply(listp, [Forms], _, t) :- listp(Forms).
+apply(listp, _, _, nil).
 
-apply(atomp, [Forms], Env, Env, t) :- atomp(Forms).
-apply(atomp, _, Env, Env, nil).
+apply(atomp, [Forms], _, t) :- atomp(Forms).
+apply(atomp, _, _, nil).
 
-apply(nilp, [Forms], Env, Env, t) :- nilp(Forms).
-apply(nilp, _, Env, Env, nil).
+apply(nilp, [Forms], _, t) :- nilp(Forms).
+apply(nilp, _, _, nil).
 
-apply(+, [X, Y], Env, Env, Z) :- Z is X + Y.
-apply(-, [X, Y], Env, Env, Z) :- Z is X - Y.
-apply(*, [X, Y], Env, Env, Z) :- Z is X * Y.
-apply(/, [X, Y], Env, Env, Z) :- Z is X / Y.
+apply(+, [X, Y], _, Z) :- Z is X + Y.
+apply(-, [X, Y], _, Z) :- Z is X - Y.
+apply(*, [X, Y], _, Z) :- Z is X * Y.
+apply(/, [X, Y], _, Z) :- Z is X / Y.
 
-% special form; don't eval the args
-apply(cond, [Forms], Env, NewEnv, Result) :-
-    %print('cond forms: '), print(Forms), nl,
-    cond(Forms, Env, NewEnv, Result).
+apply(cond, [Forms], Env, Result) :-
+    cond(Forms, Env, Result).
 
 % lambda form; update environment first
-apply([lambda, Params|[Body]], Vals, Env, NewEnv2, Result ) :-
-    %print('lambda params: '), print(Params), nl,
-    %print('lambda body: '), print(Body), nl,
-    %print('env: '), print(Env), nl,
-    %print('vals: '), print(Vals), nl,
-    merge_env(Params, Vals, Env, NewEnv),
-    %print('new env: '), print(NewEnv), nl,
-    eval(Body, NewEnv, NewEnv2, Result).
+apply([lambda, Params|[Body]], Vals, Env, Result) :-
+    term_rewrite(Body, Params, Vals, RewrittenBody),
+    eval(RewrittenBody, Env, _, Result).
+
+get_binding(Param, [Param|_], [Val|_], Val).
+get_binding(Param, [_|Params], [_|Vals], Val) :-
+    get_binding(Param, Params, Vals, Val).
+
+remove_binding(Param, [Param|Params], [_|Vals], Params, Vals).
+remove_binding(Param, [P|Params], [V|Vals], [P|NewParams], [V|NewVals]) :-
+    remove_binding(Param, Params, Vals, NewParams, NewVals).
+remove_binding(_, Params, Vals, Params, Vals).
+
+remove_bindings([], Params, Vals, Params, Vals).
+remove_bindings([Param|Rest], Params, Vals, NewParams2, NewVals2) :-
+    remove_binding(Param, Params, Vals, NewParams, NewVals),
+    remove_bindings(Rest, NewParams, NewVals, NewParams2, NewVals2).
+
+term_rewrite([], _, _, []).
+
+term_rewrite([quote|Body], _, _, [quote|Body]).
+
+term_rewrite([lambda,LambdaParams|Body], Params, Vals, [lambda,LambdaParams|RewrittenBody]) :-
+    remove_bindings(LambdaParams, Params, Vals, NewParams, NewVals),
+    term_rewrite(Body, NewParams, NewVals, RewrittenBody).
+
+term_rewrite([def, DefParam|Body], Params, Vals, [def,DefParam|RewrittenBody]) :-
+    remove_binding(DefParam, Params, Vals, NewParams, NewVals),
+    term_rewrite(Body, NewParams, NewVals, RewrittenBody).
+
+term_rewrite([Forms|Rest], Params, Vals, [RewrittenForms|RewrittenRest]) :-
+    listp(Forms),
+    term_rewrite(Forms, Params, Vals, RewrittenForms),
+    term_rewrite(Rest, Params, Vals, RewrittenRest).
+
+term_rewrite([Atom|Rest], Params, Vals, [Binding|RewrittenRest]) :-
+    get_binding(Atom, Params, Vals, Binding),
+    term_rewrite(Rest, Params, Vals, RewrittenRest).
+
+term_rewrite([Atom|Rest], Params, Vals, [Atom|RewrittenRest]) :-
+    term_rewrite(Rest, Params, Vals, RewrittenRest).
 
 lookup([[Sym, Val]|_], Sym, Val).
 lookup([_|Env], Sym, Val) :- lookup(Env, Sym, Val).
@@ -131,13 +158,15 @@ number([D]) --> digit(D).
 digit(D) --> [D], {code_type(D, digit)}.
 
 % require symbols do not start with a number
-symbol([A|As]) --> [A], {member(A, "+/-*<>=") ; code_type(A, alpha)}, symbolr(As).
-symbolr([A|As]) --> [A], {member(A, "+/-*<>=") ; code_type(A, alnum)}, symbolr(As).
+symbol([A|As]) --> [A], {member(A, "+/-*<>=") ;
+                         code_type(A, alpha)}, symbolr(As).
+symbolr([A|As]) --> [A], {member(A, "+/-*<>=") ;
+                          code_type(A, alnum)}, symbolr(As).
 symbolr([]) --> [].
 
 parse(S, P) :- phrase(sexp_many(P), S).
 
-run(S, NewEnv, Result) :- parse(S, P), eval_each(P, [], NewEnv, Result).
+run(S, NewEnv, Result) :- parse(S, P), !, eval_each(P, [], NewEnv, Result).
 
 tests :-
     !,
@@ -179,9 +208,6 @@ tests :-
 
     print('(listp (quote (a b)))'), nl,
     eval([listp, [quote, [a, b]]], [], [], t),
-
-    print('(quote 52)'), nl,
-    eval([quote, 52], [], [], 52),
 
     print('(quote a)'), nl,
     eval([quote, a], [], [], a),
@@ -266,6 +292,17 @@ tests :-
     eval([[lambda, [x, y], [x, y]], car, [quote, [a, b]]], [], [], a),
     run("((lambda (x y) (x y)) car (quote (a b)))", [], [a]),
 
-    print('y combinator for factorial'), nl.
-    
-% run("(((lambda (f) ((lambda (x) (f (lambda (v) ((x x) v)))) (lambda (x) (f (lambda (v) ((x x) v)))))) (lambda (f) (lambda (n) (cond (= n 0) 1 (* n (f (- n 1))))))) 2)", [], [2]).
+    print('((lambda (a b) (+ a b)) 3 5)'), nl,
+    run("((lambda (a b) (+ a b)) 3 5)", [], [8]),
+
+    print('(((lambda (a) (lambda (b) (+ a b))) 3) 5)'), nl,
+    run("(((lambda (a) (lambda (b) (+ a b))) 3) 5)", [], [8]),
+
+    print('(def fact (lambda (n) (cond ''((eq n 0) 1 t (* n (fact (- n 1))))))) (fact 5)'), nl,
+    run("(def fact (lambda (n) (cond '((eq n 0) 1 t (* n (fact (- n 1))))))) (fact 5)", _, [[quote, fact], 120]),
+
+    print('(def a (lambda (x) (+ x y))) (def y 5) (a 6)'), nl,
+    run("(def a (lambda (x) (+ x y))) (def y 5) (a 6)", _, [[quote, a], [quote, y], 11]),
+
+    print('y combinator for factorial'), nl,
+    run("(((lambda (f) ((lambda (x) (f (lambda (v) ((x x) v)))) (lambda (x) (f (lambda (v) ((x x) v)))))) (lambda (f) (lambda (n) (cond '((eq n 0) 1 t (* n (f (- n 1)))))))) 2)", [], [2]).
