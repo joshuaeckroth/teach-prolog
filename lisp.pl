@@ -27,20 +27,8 @@ eval_each([First|Rest], Env, NewEnv2, [FirstResult|RestResult]) :-
     eval(First, Env, NewEnv, FirstResult),
     eval_each(Rest, NewEnv, NewEnv2, RestResult).
 
-eval(t, Env, Env, t).
-eval(nil, Env, Env, nil).
-eval(car, Env, Env, car).
-eval(cdr, Env, Env, cdr).
-eval(cons, Env, Env, cons).
-eval(eq, Env, Env, eq).
-eval(cond, Env, Env, cond).
-eval(listp, Env, Env, listp).
-eval(atomp, Env, Env, atomp).
-eval(nilp, Env, Env, nilp).
-eval(+, Env, Env, +).
-eval(-, Env, Env, -).
-eval(/, Env, Env, /).
-eval(*, Env, Env, *).
+eval(Sym, Env, Env, Sym) :- member(Sym, [t, nil, car, cdr, cons, eq, cond, lisp,
+                                         atomp, nilp, +, -, /, *, <, >, <=, >=]).
 
 eval([lambda|Forms], Env, Env, [lambda|Forms]).
 
@@ -87,10 +75,21 @@ apply(-, [X, Y], _, Z) :- Z is X - Y.
 apply(*, [X, Y], _, Z) :- Z is X * Y.
 apply(/, [X, Y], _, Z) :- Z is X / Y.
 
+apply(<, [X, Y], _, t) :- X < Y.
+apply(<, [_, _], _, nil).
+
+apply(>, [X, Y], _, t) :- X > Y.
+apply(>, [_, _], _, nil).
+
+apply(<=, [X, Y], _, t) :- X =< Y. % swi-prolog's form of <=
+apply(<=, [_, _], _, nil).
+
+apply(>=, [X, Y], _, t) :- X >= Y.
+apply(>=, [_, _], _, nil).
+
 apply(cond, [Forms], Env, Result) :-
     cond(Forms, Env, Result).
 
-% lambda form; update environment first
 apply([lambda, Params|[Body]], Vals, Env, Result) :-
     term_rewrite(Body, Params, Vals, RewrittenBody),
     eval(RewrittenBody, Env, _, Result).
