@@ -74,3 +74,7 @@ findSeats(Unassigned, FinalTables) :-
     generateTables(Unassigned, EmptyTables),
     findSeats(Unassigned, EmptyTables, FinalTables).
 
+% example:
+% time(findSeats([a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p], Tables)). -> 0.001s
+% time((setof(Tables, findSeats([a,b,c,d,e,f], Tables), Results), length(Results, L))). -> 2.733s
+
