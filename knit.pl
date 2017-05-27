@@ -14,27 +14,39 @@ generateRepeats(X, N, [X|List]) :-
     N2 #= N - 1,
     generateRepeats(X, N2, List).
 
-pattern(Rows) --> rowSeq(Rows, _).
+reverseEvenRow(S, even, S2) :- reverse(S, S2).
+reverseEvenRow(S, odd, S).
 
-rowSeq([], 0).
-rowSeq([S], 1) --> 
+pattern(Rows) -->
+  {
+    RowCount in 1..10,
+    constrainedLength(Rows, 10, RowCount)
+  },
+  rowSeq(Rows, RowCount, odd).
+
+rowSeq([S], 1, EvenOdd) -->
   {
     StitchCount in 0..20,
-    constrainedLength(S, 20, StitchCount)
+    constrainedLength(S, 20, StitchCount),
+    constrainedLength(STmp, 20, StitchCount),
+    reverseEvenRow(STmp, EvenOdd, S)
   },
-  stitchSeq(S, StitchCount), ".\n".
+  stitchSeq(STmp, StitchCount), ".\n".
 
-rowSeq(Rows, RowCount) -->
+rowSeq(Rows, RowCount, EvenOdd) -->
   {
-    RowCount in 0..10,
+    RowCount in 2..10,
     RowCountRest #= RowCount - 1,
     StitchCount in 0..20,
     constrainedLength(S, 20, StitchCount),
-    append([S], RowsRest, Rows),
+    constrainedLength(STmp, 20, StitchCount),
     constrainedLength(Rows, 10, RowCount),
-    constrainedLength(RowsRest, 10, RowCountRest)
+    constrainedLength(RowsRest, 10, RowCountRest),
+    append([S], RowsRest, Rows),
+    reverseEvenRow(STmp, EvenOdd, S),
+    select(EvenOdd, [even, odd], [OddEven]) % alternate among even/odd
   },
-  stitchSeq(S, StitchCount), ".\n", rowSeq(RowsRest, RowCountRest).
+  stitchSeq(STmp, StitchCount), ".\n", rowSeq(RowsRest, RowCountRest, OddEven).
 
 stitchSeq(S, StitchCount) --> stitchSeqNonrepeating(S, StitchCount).
 stitchSeq(S, StitchCount) --> stitchSeqRepeating(S, StitchCount).
@@ -102,18 +114,17 @@ compareLength(=, L1, L2) :- length(L1, Len1), length(L2, Len2), Len1 = Len2.
 
 shortestPatternFromDiagram(Diagram, Pattern) :-
     findall(P, pattern(Diagram, P, []), Patterns),
-    print(Patterns), nl,
     predsort(compareLength, Patterns, PatternsSorted),
     PatternsSorted = [Pattern|_], !.
 
 % example usage:
 % time(setof(X, pattern([[k,k,k,p,p,p]], X, []), Result)).
-% 442,830 inferences, 0.051 CPU in 0.052 seconds
+% 157,197 inferences, 0.018 CPU in 0.018 seconds
 % Result = [[107, 51, 44, 32, 112, 51, 46, 10]]. (i.e., "k3, p3.\n")
 
 % example usage:
 % time(setof(X, pattern([[k,k,k,p,p,p,k,k,k,p,p,p]], X, []), Result)), format("~s~s~n", Result).
-% 2,794,494 inferences, 0.328 CPU in 0.331 seconds (99% CPU, 8523567 Lips)
+% 1,306,952 inferences, 0.156 CPU in 0.157 seconds
 % * k3, p3; rep from * 2 times.
 % k3, p3, k3, p3.
 
@@ -134,7 +145,13 @@ shortestPatternFromDiagram(Diagram, Pattern) :-
 % pattern(Rows, "p2, * k2, p2; rep from * 2 times.\n", []), print(Rows).
 % [[p,p,k,k,p,p,k,k,p,p]]
 % time((setof(Rows, pattern(Rows, "p2, * k2, p2; rep from * 2 times.\n", []), Result))).
-% 45,139,737 inferences, 4.242 CPU in 4.304 seconds
+% 42,049,767 inferences, 3.984 CPU in 4.009 seconds
+
+% example usage:
+% pattern(Rows, "k4, p6.\nk1, p1, * k2, p2; rep from * 2 times.\nk7, p3.\nk9, p1.\n", []), print(Rows).
+% [[k,k,k,k,p,p,p,p,p,p],[p,p,k,k,p,p,k,k,p,k],[k,k,k,k,k,k,k,p,p,p],[p,k,k,k,k,k,k,k,k,k]]
+% time((setof(Rows, pattern(Rows, "k4, p6.\nk1, p1, * k2, p2; rep from * 2 times.\nk7, p3.\nk9, p1.\n", []), Result))).
+% 100,278,278 inferences, 9.256 CPU in 9.292 seconds
 
 % example usage:
 % time((findall(X, (pattern([[k,_,k,p,_,_,k,k,k,p,_,p]], X, []), format("~s", [X])), Result), length(Result, L))).
@@ -143,7 +160,7 @@ shortestPatternFromDiagram(Diagram, Pattern) :-
 % ...
 % k3, p2, k3, * k1, p1; rep from * 2 times.
 % k3, p3, k2, * k1, p1; rep from * 2 times.
-% 9,379,594 inferences, 1.093 CPU in 1.103 seconds (99% CPU, 8578531 Lips)
+% 3,767,963 inferences, 0.441 CPU in 0.446 seconds
 % L = 26.
 
 % example usage:
@@ -154,5 +171,5 @@ shortestPatternFromDiagram(Diagram, Pattern) :-
 % example usage:
 % time((shortestPatternFromDiagram([[k,k,k,p,p,p,k,k,k,p,p,p]], P), format("~s", [P]))).
 % k3, p3, k3, p3.
-% 2,794,509 inferences, 0.357 CPU in 0.360 seconds
+% 1,313,544 inferences, 0.166 CPU in 0.176 seconds
 
