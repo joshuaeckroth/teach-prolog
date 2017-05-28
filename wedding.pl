@@ -34,12 +34,13 @@ tablesSufficientlyOccupied([table(_, Persons)|Tables]) :-
     PersonCount #>= 2,
     tablesSufficientlyOccupied(Tables).
 
-addPerson(table(Size, Persons), Person, table(Size, [Person|Persons])) :-
+addPerson(table(Size, Persons), Person, table(Size, PersonsSorted)) :-
     length(Persons, PersonCount),
-    PersonCount #< Size.
+    PersonCount #< Size,
+    sort([Person|Persons], PersonsSorted).
 
 sumTableSizes([], 0).
-sumTableSizes([table(Size, [])|Tables], S) :-
+sumTableSizes([table(Size, _)|Tables], S) :-
     member(Size, [4, 6, 8]), % tables only come in sizes 4, 6, 8
     sumTableSizes(Tables, S2),
     S #= Size + S2.
@@ -76,5 +77,5 @@ findSeats(Unassigned, FinalTables) :-
 
 % example:
 % time(findSeats([a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p], Tables)). -> 0.001s
-% time((setof(Tables, findSeats([a,b,c,d,e,f], Tables), Results), length(Results, L))). -> 2.733s
+% time((setof(Tables, findSeats([a,b,c,d,e,f], Tables), Results), length(Results, L))). -> 2.733s, 1632 solutions
 
