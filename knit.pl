@@ -1,5 +1,6 @@
 
 :- use_module(library(clpfd)).
+:- use_module(library(tabling)).
 
 constrainedLength([], _, 0).
 constrainedLength([_|T], Max, Length) :-
@@ -48,6 +49,8 @@ rowSeq(Rows, RowCount, EvenOdd) -->
   },
   stitchSeq(STmp, StitchCount), ".\n", rowSeq(RowsRest, RowCountRest, OddEven).
 
+:- table stitchSeq/4.
+
 stitchSeq(S, StitchCount) --> stitchSeqNonrepeating(S, StitchCount).
 stitchSeq(S, StitchCount) --> stitchSeqRepeating(S, StitchCount).
 stitchSeq(S, StitchCount) -->
@@ -63,6 +66,8 @@ stitchSeq(S, StitchCount) -->
   },
   stitchSeqNonrepeating(Subseq, StitchCountLeft), ", ", stitchSeqRepeating(RepeatedSeq, StitchCountRight).
 
+:- table stitchSeqNonrepeating/4.
+
 stitchSeqNonrepeating([], 0).
 stitchSeqNonrepeating(S, StitchCount) --> stitch(S, StitchCount).
 stitchSeqNonrepeating(S, StitchCount) -->
@@ -76,6 +81,8 @@ stitchSeqNonrepeating(S, StitchCount) -->
     select(SFirst, [k,p], [SFirst2]) % ensure alternation among k and p
   },
   stitch([SFirst|SRest], StitchCountLeft), ", ", stitchSeqNonrepeating([SFirst2|SRest2], StitchCountRight).
+
+:- table stitchSeqRepeating/4.
 
 stitchSeqRepeating(S, StitchCount) -->
   {
@@ -106,16 +113,16 @@ repeatCount(N) --> digit(D), { number_codes(N, [D]), N in 1..9 }.
 digitnonzero(D) --> [D], { code_type(D, digit), D \= 48 }.
 digit(D) --> [D], { code_type(D, digit) }.
 
-diagramFromPattern(Pattern, Diagram) :- pattern(Diagram, Pattern, []), !.
+%diagramFromPattern(Pattern, Diagram) :- pattern(Diagram, Pattern, []), !.
 
-compareLength(<, L1, L2) :- length(L1, Len1), length(L2, Len2), Len1 < Len2.
-compareLength(>, L1, L2) :- length(L1, Len1), length(L2, Len2), Len1 > Len2.
-compareLength(=, L1, L2) :- length(L1, Len1), length(L2, Len2), Len1 = Len2.
+%compareLength(<, L1, L2) :- length(L1, Len1), length(L2, Len2), Len1 < Len2.
+%compareLength(>, L1, L2) :- length(L1, Len1), length(L2, Len2), Len1 > Len2.
+%compareLength(=, L1, L2) :- length(L1, Len1), length(L2, Len2), Len1 = Len2.
 
-shortestPatternFromDiagram(Diagram, Pattern) :-
-    findall(P, pattern(Diagram, P, []), Patterns),
-    predsort(compareLength, Patterns, PatternsSorted),
-    PatternsSorted = [Pattern|_], !.
+%shortestPatternFromDiagram(Diagram, Pattern) :-
+%    findall(P, pattern(Diagram, P, []), Patterns),
+%    predsort(compareLength, Patterns, PatternsSorted),
+%    PatternsSorted = [Pattern|_], !.
 
 % example usage:
 % time(setof(X, pattern([[k,k,k,p,p,p]], X, []), Result)).
