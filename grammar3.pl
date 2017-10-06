@@ -1,4 +1,6 @@
 
+% syntactical-sugar for above form
+
 s --> np, vp.
 
 np --> det, n.

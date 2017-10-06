@@ -1,12 +1,15 @@
 
-s(X,Z) :- np(X,Y), vp(Y,Z). 
+% just as good, but call the remainder R; can make R=[] if need to ensure no remainder
 
-np(X,Z) :- det(X,Y), n(Y,Z). 
+s(X,R) :- np(X,Y), vp(Y,R). 
 
-vp(X,Z) :- v(X,Y), np(Y,Z). 
+np(X,R) :- det(X,Y), n(Y,R). 
 
-vp(X,Z) :- v(X,Z). 
+vp(X,R) :- v(X,Y), np(Y,R). 
 
+vp(X,R) :- v(X,R). 
+
+% i.e., starts with a particular token
 det([the|W],W). 
 det([a|W],W). 
 

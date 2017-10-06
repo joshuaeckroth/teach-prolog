@@ -113,7 +113,7 @@ repeatCount(N) --> digit(D), { number_codes(N, [D]), N in 1..9 }.
 digitnonzero(D) --> [D], { code_type(D, digit), D \= 48 }.
 digit(D) --> [D], { code_type(D, digit) }.
 
-%diagramFromPattern(Pattern, Diagram) :- pattern(Diagram, Pattern, []), !.
+diagramPattern(Diagram, Pattern) :- pattern(Diagram, Pattern, []).
 
 %compareLength(<, L1, L2) :- length(L1, Len1), length(L2, Len2), Len1 < Len2.
 %compareLength(>, L1, L2) :- length(L1, Len1), length(L2, Len2), Len1 > Len2.

@@ -60,5 +60,5 @@ evalCombinationalLogic(KnownGates, Wires, [(Gate, Inputs, Output)|RestGates]) :-
 
 % doesn't work:
 % example usage: derive XOR
-% evalCombinationalLogic([(a,0),(b,1)|Wires], [(, [a, b], c), (not, [c], d), (LastGate, [d|RestInputs], Output)]).
+% evalCombinationalLogic([(a,0),(b,1)|Wires], [(Gate, [a, b], c), (not, [c], d), (LastGate, [d|RestInputs], Output)]).
 
