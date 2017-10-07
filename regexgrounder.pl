@@ -7,16 +7,28 @@ printEach([T|Terms]) :-
     format("~s~n", [T]),
     printEach(Terms).
 
+concatEach([], "").
+concatEach([T|Terms], SNew) :-
+    concatEach(Terms, SPrior),
+    append(T, ['\n'], TNewline),
+    append(TNewline, SPrior, SNew).
+
 ground_regex(Regex) :-
     regex(Terms, Regex, []), !,
     printEach(Terms).
 
+ground_regex(Regex, TermsString) :-
+    regex(Terms, Regex, []), !,
+    concatEach(Terms, TermsString).
+
 regex(Terms) --> "/", regex_inner(Terms), "/".
 
-regex_inner(Terms) --> "(", option_group(OptTerms), ")", regex_inner(RestTerms),
-    { appendEach(OptTerms, RestTerms, Terms) }.
-regex_inner(Terms) --> "(", option_group(OptTerms), ")?", regex_inner(RestTerms),
-    { appendEach([""|OptTerms], RestTerms, Terms) }.
+regex_inner(Terms) --> terms(LeftTerms), "(", option_group(OptTerms), ")", regex_inner(RestTerms),
+    { appendEach(LeftTerms, OptTerms, LeftOptTerms),
+      appendEach(LeftOptTerms, RestTerms, Terms) }.
+regex_inner(Terms) --> terms(LeftTerms), "(", option_group(OptTerms), ")?", regex_inner(RestTerms),
+    { appendEach(LeftTerms, OptTerms, LeftOptTerms),
+      appendEach([""|LeftOptTerms], RestTerms, Terms) }.
 regex_inner(Terms) --> terms(LeftTerms), " ", regex_inner(RightTerms),
     { appendEach(LeftTerms, [" "], TermsSpace),
       appendEach(TermsSpace, RightTerms, Terms) }.
@@ -28,7 +40,9 @@ option_group(Terms) --> regex_inner(LeftTerms), "|", option_group(RightTerms),
     { append(LeftTerms, RightTerms, Terms) }.
 
 terms([Term]) --> text(Term).
-terms([Term,TermA]) --> text(Term), [A], "?", { append(Term, [A], TermA) }.
+terms(Terms) --> text(Term), [A], "?", terms(RightTerms),
+    { append(Term, [A], TermA),
+      appendEach([Term,TermA], RightTerms, Terms) }.
 text([A|As]) --> [A], { char_type(A, alnum) }, text(As).
 text([]) --> [].
 
