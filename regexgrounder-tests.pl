@@ -1,6 +1,8 @@
 
 % run as: swipl -q -s regexgrounder-tests.pl -t run_tests
 
+
+
 :- use_module(library(test_cover)).
 
 :- begin_tests(regexgrounder).
@@ -23,7 +25,8 @@ test(optqmark) :-
     ground_regex("/(abc|def)?xyz/", "xyz\nabcxyz\ndefxyz\n"),
     ground_regex("/abc(def|s?)xyz/", "abcdefxyz\nabcxyz\nabcsxyz\n"),
     ground_regex("/(abc|def)? xyz/", " xyz\nabc xyz\ndef xyz\n"),
-    ground_regex("/abc (def|s?)xyz/", "abc defxyz\nabc xyz\nabc sxyz\n").
+    ground_regex("/abc (def|s?)xyz/", "abc defxyz\nabc xyz\nabc sxyz\n"),
+    ground_regex("/abc(def|ghi)? xyz(123|456)?tuv/", "abc xyztuv\nabc xyz123tuv\nabc xyz456tuv\nabcdef xyztuv\nabcdef xyz123tuv\nabcdef xyz456tuv\nabcghi xyztuv\nabcghi xyz123tuv\nabcghi xyz456tuv\n").
 
 :- end_tests(regexgrounder).
 

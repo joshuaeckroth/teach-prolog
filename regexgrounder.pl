@@ -27,8 +27,8 @@ regex_inner(Terms) --> terms(LeftTerms), "(", option_group(OptTerms), ")", regex
     { appendEach(LeftTerms, OptTerms, LeftOptTerms),
       appendEach(LeftOptTerms, RestTerms, Terms) }.
 regex_inner(Terms) --> terms(LeftTerms), "(", option_group(OptTerms), ")?", regex_inner(RestTerms),
-    { appendEach(LeftTerms, OptTerms, LeftOptTerms),
-      appendEach([""|LeftOptTerms], RestTerms, Terms) }.
+    { appendEach(LeftTerms, [""|OptTerms], LeftOptTerms),
+      appendEach(LeftOptTerms, RestTerms, Terms) }.
 regex_inner(Terms) --> terms(LeftTerms), " ", regex_inner(RightTerms),
     { appendEach(LeftTerms, [" "], TermsSpace),
       appendEach(TermsSpace, RightTerms, Terms) }.
