@@ -5,18 +5,9 @@
 
 :- prompt(_, 'Type a command (or ''help''): ').
 
-strip_punctuation([], []).
+pprint(S) :- format("~s", [S]).
 
-strip_punctuation([Word|Tail], [Word|Result]) :-
-    \+(member(Word, ['.', ',', '?', '!'])),
-    strip_punctuation(Tail, Result).
-
-strip_punctuation([_|Tail], Result) :-
-    strip_punctuation(Tail, Result).
-
-read_sentence(Input) :-
-    readln(Input1, _, ".!?", "_0123456789", lowercase),
-    strip_punctuation(Input1, Input).
+read_sentence(Input) :- readln(Input).
 
 play :-
     retractall(current_room(_)), retractall(toggled(_)),
@@ -52,14 +43,14 @@ toggle(switch3) :- toggled(switch2), assertz(toggled(switch3)).
 print_location :-
     current_room(Current),
     room(Current, Name, Description),
-    print(Name), nl, print(Description), nl.    
+    pprint(Name), nl, pprint(Description), nl.    
 
 change_room(NewRoom) :-
     current_room(Current),
     retract(current_room(Current)),
     assertz(current_room(NewRoom)).
 
-process_input([help]) :- print('Help...'), nl.
+process_input([help]) :- pprint('Help...'), nl.
 
 process_input([go, Direction]) :-
     current_room(Current),
@@ -67,15 +58,15 @@ process_input([go, Direction]) :-
     change_room(NewRoom).
 
 process_input([go, _]) :-
-    print('No exit that direction.'), nl.
+    pprint('No exit that direction.'), nl.
 
 process_input([toggle, Switch]) :-
     toggle(Switch),
     setof(X, toggled(X), Switches),
-    print('Toggled switches: '), print(Switches), nl.
+    pprint('Toggled switches: '), pprint(Switches), nl.
 
 process_input([toggle, _]) :-
-    print('Cannot toggle that switch.'), nl.
+    pprint('Cannot toggle that switch.'), nl.
 
 process_input([_]) :-
-    print('Huh?'), nl, nl.
+    pprint('Huh?'), nl, nl.
